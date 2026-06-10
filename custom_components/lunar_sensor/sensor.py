@@ -13,8 +13,8 @@ _LOGGER = logging.getLogger(__name__)
 DOMAIN = "lunar_sensor"
 
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    """设置传感器平台"""
+async def async_setup_entry(hass, config_entry, async_add_entities):
+    """Set up sensors from a config entry."""
     sensors = [
         LunarDateSensor(),
         LunarFestivalSensor(),
