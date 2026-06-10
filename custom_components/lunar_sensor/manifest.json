@@ -7,6 +7,5 @@
   "dependencies": [],
   "codeowners": [],
   "iot_class": "local_polling",
-  "config_flow": true,
-  "icon": "mdi:calendar-month"
+  "config_flow": true
 }

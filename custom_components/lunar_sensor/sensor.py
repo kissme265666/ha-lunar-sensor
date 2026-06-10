@@ -53,11 +53,9 @@ async def async_setup_entry(
 class LunarDateSensor(SensorEntity):
     """农历日期传感器，如'四月廿五'"""
 
-    _attr_has_entity_name = True
-
     def __init__(self, device_info: DeviceInfo):
+        self._attr_name = "农历日期"
         self._attr_unique_id = "lunar_sensor_date"
-        self._attr_translation_key = "lunar_date"
         self._attr_icon = "mdi:calendar-month"
         self._attr_device_info = device_info
 
@@ -71,11 +69,9 @@ class LunarDateSensor(SensorEntity):
 class LunarFestivalSensor(SensorEntity):
     """农历节日传感器，如'端午'（两字，去掉末尾'节'）"""
 
-    _attr_has_entity_name = True
-
     def __init__(self, device_info: DeviceInfo):
+        self._attr_name = "农历节日"
         self._attr_unique_id = "lunar_sensor_festival"
-        self._attr_translation_key = "lunar_festival"
         self._attr_icon = "mdi:calendar-star"
         self._attr_device_info = device_info
 
@@ -87,22 +83,19 @@ class LunarFestivalSensor(SensorEntity):
 
         if festivals:
             raw = festivals[0]
-            # 去掉末尾"节"字，但保留两字节日（如春节）
             if len(raw) > 2 and raw.endswith("节"):
                 raw = raw[:-1]
             self._attr_native_value = raw
         else:
-            self._attr_native_value = None
+            self._attr_native_value = ""
 
 
 class SolarTermSensor(SensorEntity):
     """节气传感器，如'芒种'"""
 
-    _attr_has_entity_name = True
-
     def __init__(self, device_info: DeviceInfo):
+        self._attr_name = "节气"
         self._attr_unique_id = "lunar_sensor_term"
-        self._attr_translation_key = "solar_term"
         self._attr_icon = "mdi:leaf"
         self._attr_device_info = device_info
 
@@ -111,4 +104,4 @@ class SolarTermSensor(SensorEntity):
         solar = Solar(today.year, today.month, today.day, 0, 0, 0)
         lunar = Lunar.fromSolar(solar)
         term = lunar.getJieQi()
-        self._attr_native_value = term if term else None
+        self._attr_native_value = term if term else ""
