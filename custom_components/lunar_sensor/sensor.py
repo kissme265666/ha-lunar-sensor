@@ -39,6 +39,7 @@ class LunarDateSensor(SensorEntity):
     def __init__(self):
         self._attr_name = "农历日期"
         self._attr_unique_id = "lunar_sensor_date"
+        self._attr_icon = "mdi:calendar-month"
 
     def update(self):
         today = date.today()
@@ -53,6 +54,7 @@ class LunarFestivalSensor(SensorEntity):
     def __init__(self):
         self._attr_name = "农历节日"
         self._attr_unique_id = "lunar_sensor_festival"
+        self._attr_icon = "mdi:lantern"
 
     def update(self):
         today = date.today()
@@ -76,6 +78,7 @@ class SolarTermSensor(SensorEntity):
     def __init__(self):
         self._attr_name = "节气"
         self._attr_unique_id = "lunar_sensor_term"
+        self._attr_icon = "mdi:weather-partly-snowy-rainy"
 
     def update(self):
         today = date.today()
