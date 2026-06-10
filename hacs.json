@@ -1,6 +1,5 @@
 {
   "name": "农历传感器",
   "homeassistant": "2023.1.0",
-  "render_readme": true,
-  "icon": "mdi:calendar-month"
+  "render_readme": true
 }
