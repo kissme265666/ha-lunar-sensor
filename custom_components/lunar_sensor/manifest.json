@@ -1,0 +1,10 @@
+{
+  "domain": "lunar_sensor",
+  "name": "农历传感器",
+  "version": "1.0.0",
+  "documentation": "https://gitee.com/SilverMoonD/ha-custom_components",
+  "requirements": ["lunar-python"],
+  "dependencies": [],
+  "codeowners": [],
+  "iot_class": "local_polling"
+}
