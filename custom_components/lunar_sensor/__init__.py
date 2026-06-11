@@ -1,4 +1,5 @@
 """农历传感器自定义集成"""
+import logging
 from pathlib import Path
 import shutil
 
