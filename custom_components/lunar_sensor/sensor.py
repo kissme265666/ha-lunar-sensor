@@ -15,17 +15,17 @@ DOMAIN = "lunar_sensor"
 SENSOR_DESCRIPTIONS = (
     SensorEntityDescription(
         key="date",
-        translation_key="lunar_date",
+        name="农历日期",
         icon="mdi:calendar-month",
     ),
     SensorEntityDescription(
         key="festival",
-        translation_key="lunar_festival",
+        name="农历节日",
         icon="mdi:calendar-star",
     ),
     SensorEntityDescription(
         key="term",
-        translation_key="solar_term",
+        name="节气",
         icon="mdi:leaf",
     ),
 )
