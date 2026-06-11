@@ -1,22 +1,57 @@
 """农历传感器 - 提供农历日期、节日、节气三个实体"""
 from datetime import date, timedelta
-import logging
 
-from homeassistant.components.sensor import SensorEntity
-from homeassistant.helpers.event import async_track_time_interval
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.core import callback, HomeAssistant
+from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import callback, HomeAssistant
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.util.dt import now
 
 from lunar_python import Lunar, Solar
 
-_LOGGER = logging.getLogger(__name__)
-
 DOMAIN = "lunar_sensor"
+
+SENSOR_DESCRIPTIONS = (
+    SensorEntityDescription(
+        key="date",
+        translation_key="lunar_date",
+        icon="mdi:calendar-month",
+    ),
+    SensorEntityDescription(
+        key="festival",
+        translation_key="lunar_festival",
+        icon="mdi:calendar-star",
+    ),
+    SensorEntityDescription(
+        key="term",
+        translation_key="solar_term",
+        icon="mdi:leaf",
+    ),
+)
+
+
+def _get_lunar_data(today: date | None = None) -> dict:
+    """获取当天的农历日期、节日和节气数据。"""
+    today = today or now().date()
+    solar = Solar(today.year, today.month, today.day, 0, 0, 0)
+    lunar = Lunar.fromSolar(solar)
+
+    festivals = lunar.getFestivals()
+    festival = ""
+    if festivals:
+        festival = festivals[0]
+        if len(festival) > 2 and festival.endswith("节"):
+            festival = festival[:-1]
+
+    return {
+        "date": f"{lunar.getMonthInChinese()}月{lunar.getDayInChinese()}",
+        "festival": festival,
+        "term": lunar.getJieQi() or "",
+    }
 
 
 def _build_device_info() -> DeviceInfo:
-    """Build shared DeviceInfo for all sensors."""
     return DeviceInfo(
         identifiers={(DOMAIN, "lunar_sensor_device")},
         name="农历传感器",
@@ -31,77 +66,40 @@ async def async_setup_entry(
 ):
     """Set up sensors from a config entry."""
     device_info = _build_device_info()
-
-    sensors = [
-        LunarDateSensor(device_info),
-        LunarFestivalSensor(device_info),
-        SolarTermSensor(device_info),
+    data = _get_lunar_data()
+    entities = [
+        LunarSensor(description, device_info, data)
+        for description in SENSOR_DESCRIPTIONS
     ]
-
-    async_add_entities(sensors, update_before_add=True)
+    async_add_entities(entities, update_before_add=True)
 
     @callback
-    async def update_sensors(_):
-        """每小时更新一次"""
-        for sensor in sensors:
-            sensor.update()
-            sensor.async_write_ha_state()
+    async def _async_update(_):
+        """每分钟检查一次，数据变化时更新。"""
+        new_data = _get_lunar_data()
+        for entity in entities:
+            entity.update_data(new_data)
 
-    async_track_time_interval(hass, update_sensors, timedelta(hours=1))
+    async_track_time_interval(hass, _async_update, timedelta(minutes=1))
 
 
-class LunarDateSensor(SensorEntity):
-    """农历日期传感器，如'四月廿五'"""
+class LunarSensor(SensorEntity):
+    """农历传感器通用实体。"""
 
-    def __init__(self, device_info: DeviceInfo):
-        self._attr_name = "农历日期"
-        self._attr_unique_id = "lunar_sensor_date"
-        self._attr_icon = "mdi:calendar-month"
+    def __init__(self, description: SensorEntityDescription, device_info: DeviceInfo, data: dict):
+        self.entity_description = description
         self._attr_device_info = device_info
+        self._attr_unique_id = f"lunar_sensor_{description.key}"
+        self._data = data
 
-    def update(self):
-        today = date.today()
-        solar = Solar(today.year, today.month, today.day, 0, 0, 0)
-        lunar = Lunar.fromSolar(solar)
-        self._attr_native_value = f"{lunar.getMonthInChinese()}月{lunar.getDayInChinese()}"
+    @property
+    def native_value(self):
+        return self._data.get(self.entity_description.key, "")
 
-
-class LunarFestivalSensor(SensorEntity):
-    """农历节日传感器，如'端午'（两字，去掉末尾'节'）"""
-
-    def __init__(self, device_info: DeviceInfo):
-        self._attr_name = "农历节日"
-        self._attr_unique_id = "lunar_sensor_festival"
-        self._attr_icon = "mdi:calendar-star"
-        self._attr_device_info = device_info
-
-    def update(self):
-        today = date.today()
-        solar = Solar(today.year, today.month, today.day, 0, 0, 0)
-        lunar = Lunar.fromSolar(solar)
-        festivals = lunar.getFestivals()
-
-        if festivals:
-            raw = festivals[0]
-            if len(raw) > 2 and raw.endswith("节"):
-                raw = raw[:-1]
-            self._attr_native_value = raw
-        else:
-            self._attr_native_value = ""
-
-
-class SolarTermSensor(SensorEntity):
-    """节气传感器，如'芒种'"""
-
-    def __init__(self, device_info: DeviceInfo):
-        self._attr_name = "节气"
-        self._attr_unique_id = "lunar_sensor_term"
-        self._attr_icon = "mdi:leaf"
-        self._attr_device_info = device_info
-
-    def update(self):
-        today = date.today()
-        solar = Solar(today.year, today.month, today.day, 0, 0, 0)
-        lunar = Lunar.fromSolar(solar)
-        term = lunar.getJieQi()
-        self._attr_native_value = term if term else ""
+    def update_data(self, data: dict) -> None:
+        """更新数据，只有值变化时才写入状态。"""
+        new_value = data.get(self.entity_description.key, "")
+        if self.native_value == new_value:
+            return
+        self._data = data
+        self.async_write_ha_state()

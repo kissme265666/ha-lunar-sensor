@@ -4,65 +4,34 @@ from pathlib import Path
 import shutil
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EVENT_HOMEASSISTANT_START
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.storage import STORAGE_DIR
+from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "lunar_sensor"
+BRAND_ICONS = ("icon.png", "icon@2x.png", "logo.png")
 
 
 def _sync_brand_icons(hass: HomeAssistant) -> None:
-    """Copy bundled icon files into the Home Assistant brands cache.
-
-    HA caches brand icons in ``.cache/brands/integrations/<domain>/``
-    (2024.4+) and/or ``.storage/brand_cache/<domain>/``. Copy to both
-    locations so the integration card can show the bundled icon.
-    """
+    """将集成的图标/Logo复制到HA品牌缓存目录。"""
     component_dir = Path(__file__).parent.resolve()
-    config_path = Path(hass.config.path())
+    brand_dir = Path(hass.config.path()) / ".cache" / "brands" / "integrations" / DOMAIN
+    brand_dir.mkdir(parents=True, exist_ok=True)
 
-    brand_dirs = [
-        config_path / ".cache" / "brands" / "integrations" / DOMAIN,
-        config_path / STORAGE_DIR / "brand_cache" / DOMAIN,
-    ]
-
-    for brand_dir in brand_dirs:
-        brand_dir.mkdir(parents=True, exist_ok=True)
-
-        for filename in ("icon.png", "icon@2x.png", "logo.png"):
-            source = component_dir / filename
-            dest = brand_dir / filename
-            if source.exists():
-                try:
-                    shutil.copy2(source, dest)
-                    _LOGGER.debug(
-                        "Copied %s to %s (%s bytes)",
-                        filename,
-                        brand_dir,
-                        dest.stat().st_size,
-                    )
-                except OSError as err:
-                    _LOGGER.warning(
-                        "Failed to copy brand icon %s to %s: %s",
-                        filename,
-                        brand_dir,
-                        err,
-                    )
-            else:
-                _LOGGER.debug("Brand icon source missing: %s", source)
+    for filename in BRAND_ICONS:
+        source = component_dir / filename
+        dest = brand_dir / filename
+        if not source.exists():
+            continue
+        try:
+            shutil.copy2(source, dest)
+            _LOGGER.debug("已复制品牌图标 %s", filename)
+        except OSError as err:
+            _LOGGER.warning("复制品牌图标 %s 失败: %s", filename, err)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the lunar_sensor component."""
-    await hass.async_add_executor_job(_sync_brand_icons, hass)
-
-    @callback
-    def _on_start(_):
-        _sync_brand_icons(hass)
-
-    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, _on_start)
     return True
 
 
