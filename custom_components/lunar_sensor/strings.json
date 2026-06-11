@@ -10,18 +10,5 @@
     "abort": {
       "single_instance_allowed": "只能添加一个实例"
     }
-  },
-  "entity": {
-    "sensor": {
-      "lunar_date": {
-        "name": "农历日期"
-      },
-      "lunar_festival": {
-        "name": "农历节日"
-      },
-      "solar_term": {
-        "name": "节气"
-      }
-    }
   }
 }
